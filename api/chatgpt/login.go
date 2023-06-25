@@ -23,7 +23,7 @@ func Login(c *api.LoginInfo) (*AuthResult, *Error) {
 	req.Header.Set("User-Agent", api.UserAgent)
 	resp, err := userLogin.client.Do(req)
 	if err != nil {
-		return nil, NewError(resp.StatusCode, getCsrfTokenErrorMessage, err)
+		return nil, NewError(0, getCsrfTokenErrorMessage, err)
 	}
 
 	defer resp.Body.Close()

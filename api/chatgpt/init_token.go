@@ -5,6 +5,7 @@ import (
 	"github.com/linweiyuan/go-chatgpt-api/api"
 	"log"
 	"os"
+	"strconv"
 	"sync"
 )
 
@@ -30,14 +31,33 @@ func InitToken() {
 		panic(err)
 	}
 	var tokens []AuthResult
+	failCount := 0
+	i := os.Getenv("LOGIN_FAILED_RETRY_COUNT")
+	cc, _ := strconv.Atoi(i)
 	for _, v := range accountList {
 		authResult, err := Login(&v)
-		if err != nil {
-			log.Printf("账号:%s 登录失败：\n", v.Username, err)
+		if err == nil {
+			tokens = append(tokens, *authResult)
 			continue
 		}
-		tokens = append(tokens, *authResult)
+		log.Printf("账号:%s 登录失败：, 错误信息：%v \n\n", v.Username, err)
+		addFlag := false
+		for retryCount := 1; retryCount <= cc; retryCount++ {
+			authResult, err = Login(&v)
+			if err == nil {
+				tokens = append(tokens, *authResult)
+				log.Printf("账号:%s 第%d次重试登录成功 \n\n", v.Username, retryCount)
+				break
+			}
+			if !addFlag {
+				failCount++
+				addFlag = true
+			}
+			log.Printf("账号:%s 经过%d次重试登录依然失败：, 错误信息：%v \n\n", v.Username, retryCount, err)
+		}
+
 	}
+	log.Printf("所有账号登录完成,成功数量:%d   失败数量:%d  \n\n", len(accountList)-failCount, failCount)
 	if err != nil {
 		log.Println(err)
 		panic(err)
