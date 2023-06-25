@@ -32,7 +32,7 @@ func Login(c *api.LoginInfo) (*AuthResult, *Error) {
 			doc, _ := goquery.NewDocumentFromReader(resp.Body)
 			alert := doc.Find(".message").Text()
 			if alert != "" {
-				return nil, NewError(resp.StatusCode, getCsrfTokenErrorMessage, err)
+				return nil, NewError(resp.StatusCode, alert, err)
 			}
 		}
 		return nil, NewError(resp.StatusCode, getCsrfTokenErrorMessage, err)
