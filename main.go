@@ -11,6 +11,8 @@ import (
 	"log"
 	"os"
 	"strings"
+
+	http "github.com/bogdanfinn/fhttp"
 )
 
 func init() {
@@ -42,6 +44,11 @@ func main() {
 	setupPlatformAPIs(router)
 	setupPandoraAPIs(router)
 	router.NoRoute(api.Proxy)
+
+	router.GET("/", func(c *gin.Context) {
+		c.Header("Content-Type", "text/plain")
+		c.String(http.StatusOK, api.ReadyHint)
+	})
 
 	router.GET("/healthCheck", api.HealthCheck)
 
@@ -82,6 +89,10 @@ func setupPandoraAPIs(router *gin.Engine) {
 			router.HandleContext(c)
 		})
 		router.POST("/api/*path", func(c *gin.Context) {
+			c.Request.URL.Path = strings.ReplaceAll(c.Request.URL.Path, "/api", "/chatgpt/backend-api")
+			router.HandleContext(c)
+		})
+		router.PATCH("/api/*path", func(c *gin.Context) {
 			c.Request.URL.Path = strings.ReplaceAll(c.Request.URL.Path, "/api", "/chatgpt/backend-api")
 			router.HandleContext(c)
 		})
