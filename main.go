@@ -1,25 +1,38 @@
 package main
 
 import (
-	"log"
-	"os"
-	"strings"
-
 	"github.com/gin-gonic/gin"
 	"github.com/linweiyuan/go-chatgpt-api/api"
 	"github.com/linweiyuan/go-chatgpt-api/api/chatgpt"
 	"github.com/linweiyuan/go-chatgpt-api/api/platform"
 	_ "github.com/linweiyuan/go-chatgpt-api/env"
 	"github.com/linweiyuan/go-chatgpt-api/middleware"
+	"github.com/robfig/cron/v3"
+	"log"
+	"os"
+	"strings"
 )
 
 func init() {
 	gin.ForceConsoleColor()
 	gin.SetMode(gin.ReleaseMode)
+	//启动时获取一次token
+	chatgpt.InitToken()
+	middleware.Init()
+	//定时任务,每天凌晨1点更新token
+	crontab := cron.New(cron.WithSeconds())
+	// 添加定时任务,
+	crontab.AddFunc("0 0 1 * * ? ", chatgpt.InitToken)
+	// 更新第三方调用授权码
+	crontab.AddFunc("0 0/1 * * * ? *", middleware.Init)
+	// 启动定时器
+	crontab.Start()
 }
 
 //goland:noinspection SpellCheckingInspection
 func main() {
+
+	gin.SetMode(gin.DebugMode)
 	router := gin.Default()
 
 	router.Use(middleware.CORSMiddleware())
@@ -45,26 +58,18 @@ func main() {
 //goland:noinspection SpellCheckingInspection
 func setupChatGPTAPIs(router *gin.Engine) {
 	chatgptGroup := router.Group("/chatgpt")
-	{
-		chatgptGroup.POST("/login", chatgpt.Login)
-
-		conversationGroup := chatgptGroup.Group("/backend-api/conversation")
-		{
-			conversationGroup.POST("", chatgpt.CreateConversation)
-		}
-	}
+	chatgptGroup.POST("/login", chatgpt.LoginApi)
+	chatgptGroup.POST("/backend-api/conversation", chatgpt.CreateConversation)
+	chatgptGroup.POST("/backend-api/conversation/simple", chatgpt.CreateConversationSimple)
 }
 
 func setupPlatformAPIs(router *gin.Engine) {
 	platformGroup := router.Group("/platform")
 	{
-		platformGroup.POST("/login", platform.Login)
-
+		platformGroup.POST("/login", chatgpt.LoginApi)
 		apiGroup := platformGroup.Group("/v1")
-		{
-			apiGroup.POST("/chat/completions", platform.CreateChatCompletions)
-			apiGroup.POST("/completions", platform.CreateCompletions)
-		}
+		apiGroup.POST("/chat/completions", platform.CreateChatCompletions)
+		apiGroup.POST("/completions", platform.CreateCompletions)
 	}
 }
 

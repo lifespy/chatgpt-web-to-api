@@ -17,7 +17,6 @@ Authorization: Bearer {{accessToken}}
 
 ### create conversation
 POST {{baseUrl}}/chatgpt/backend-api/conversation
-Authorization: Bearer {{accessToken}}
 Content-Type: application/json
 Accept: text/event-stream
 
@@ -32,7 +31,7 @@ Accept: text/event-stream
       "content": {
         "content_type": "text",
         "parts": [
-          "hello"
+          "你是谁"
         ]
       },
       "metadata": {}
@@ -41,6 +40,17 @@ Accept: text/event-stream
   "model": "gpt-4",
   "timezone_offset_min": -480,
   "history_and_training_disabled": false
+}
+
+### create conversation
+POST {{baseUrl}}/chatgpt/backend-api/conversation/simple
+Authorization: test
+Content-Type: application/json
+Accept: text/event-stream
+
+{
+  "message": "你是谁",
+  "model": "gpt-4-mobile"
 }
 
 ### get models

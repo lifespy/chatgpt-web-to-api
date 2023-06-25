@@ -1,7 +1,9 @@
 package chatgpt
 
 //goland:noinspection GoSnakeCaseUsage
-import tls_client "github.com/bogdanfinn/tls-client"
+import (
+	tls_client "github.com/bogdanfinn/tls-client"
+)
 
 type UserLogin struct {
 	client tls_client.HttpClient
@@ -85,4 +87,24 @@ type Cookie struct {
 	Name   string `json:"name"`
 	Value  string `json:"value"`
 	Expiry int64  `json:"expiry"`
+}
+
+type AuthResult struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+	PUID         string `json:"puid"`
+}
+
+type Error struct {
+	StatusCode int
+	Details    string
+	Error      error
+}
+
+func NewError(statusCode int, details string, err error) *Error {
+	return &Error{
+		StatusCode: statusCode,
+		Details:    details,
+		Error:      err,
+	}
 }

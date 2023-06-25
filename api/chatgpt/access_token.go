@@ -120,7 +120,7 @@ func (userLogin *UserLogin) CheckPassword(state string, username string, passwor
 		if resp.StatusCode == http.StatusFound {
 			location := resp.Header.Get("Location")
 			if strings.HasPrefix(location, "/u/mfa-otp-challenge") {
-				return "", http.StatusBadRequest, errors.New("Login with two-factor authentication enabled is not supported currently.")
+				return "", http.StatusBadRequest, errors.New("LoginApi with two-factor authentication enabled is not supported currently.")
 			}
 
 			req, _ := http.NewRequest(http.MethodGet, location, nil)

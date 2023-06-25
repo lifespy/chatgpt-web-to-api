@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/linweiyuan/go-chatgpt-api/api"
-	"os"
+	uuid "github.com/satori/go.uuid"
 	"strings"
 
 	http "github.com/bogdanfinn/fhttp"
@@ -18,7 +18,74 @@ var (
 
 //goland:noinspection SpellCheckingInspection
 func init() {
-	arkoseTokenUrl = os.Getenv("GO_CHATGPT_API_ARKOSE_TOKEN_URL")
+	arkoseTokenUrl = "https://arkose-token.linweiyuan.com"
+}
+
+type simpleConversationRequest struct {
+	Message string `json:"message"`
+	Model   string `json:"model"`
+}
+
+//goland:noinspection GoUnhandledErrorResult
+func CreateConversationSimple(c *gin.Context) {
+	var request simpleConversationRequest
+	if err := c.BindJSON(&request); err != nil {
+		c.AbortWithStatusJSON(http.StatusBadRequest, api.ReturnMessage(parseJsonErrorMessage))
+		return
+	}
+
+	param := CreateConversationRequest{
+		Action: "next",
+		Messages: []Message{
+			{
+				ID:     uuid.NewV4().String(),
+				Author: Author{Role: defaultRole},
+				Content: Content{
+					ContentType: "text",
+					Parts:       []string{request.Message},
+				},
+			},
+		},
+		Model:                      request.Model,
+		TimezoneOffsetMin:          -480,
+		HistoryAndTrainingDisabled: false,
+	}
+
+	if param.Model == "" {
+		param.Model = gpt4Model
+	}
+
+	if param.ConversationID == nil || *param.ConversationID == "" {
+		param.ConversationID = nil
+	}
+
+	if len(param.Messages) != 0 {
+		if param.Messages[0].Author.Role == "" {
+			param.Messages[0].Author.Role = defaultRole
+		}
+	}
+
+	if strings.HasPrefix(param.Model, gpt4Model) {
+		if arkoseTokenUrl != "" {
+			req, _ := http.NewRequest(http.MethodGet, arkoseTokenUrl, nil)
+			resp, err := api.Client.Do(req)
+			if err != nil || resp.StatusCode != http.StatusOK {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage("Failed to get arkose token."))
+				return
+			}
+
+			responseMap := make(map[string]string)
+			json.NewDecoder(resp.Body).Decode(&responseMap)
+			param.ArkoseToken = responseMap["token"]
+		}
+	}
+
+	resp, done := sendConversationRequest(c, param)
+	if done {
+		return
+	}
+
+	handleConversationResponse(c, resp, param)
 }
 
 //goland:noinspection GoUnhandledErrorResult
@@ -67,8 +134,13 @@ func sendConversationRequest(c *gin.Context, request CreateConversationRequest) 
 	jsonBytes, _ := json.Marshal(request)
 	req, _ := http.NewRequest(http.MethodPost, api.ChatGPTApiUrlPrefix+"/backend-api/conversation", bytes.NewBuffer(jsonBytes))
 	req.Header.Set("User-Agent", api.UserAgent)
-	req.Header.Set("Authorization", api.GetAccessToken(c.GetHeader(api.AuthorizationHeader)))
 	req.Header.Set("Accept", "text/event-stream")
+	accessToken := TokenManager.GetToken()
+	req.Header.Set("Authorization", api.GetAccessToken(accessToken.AccessToken))
+	// Clear cookies
+	//if accessToken.PUID != "" {
+	//	req.Header.Set("Cookie", "_puid="+accessToken.PUID+";")
+	//}
 	resp, err := api.Client.Do(req)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage(err.Error()))
