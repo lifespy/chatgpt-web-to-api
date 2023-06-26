@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"sync"
+	"time"
 )
 
 type accessToken struct {
@@ -32,12 +33,12 @@ func InitToken() {
 	}
 	var tokens []AuthResult
 	failCount := 0
-	i := os.Getenv("LOGIN_FAILED_RETRY_COUNT")
-	cc, _ := strconv.Atoi(i)
+	cc, _ := strconv.Atoi(os.Getenv("LOGIN_FAILED_RETRY_COUNT"))
 	for _, v := range accountList {
 		authResult, err := Login(&v)
 		if err == nil {
 			tokens = append(tokens, *authResult)
+			time.Sleep(10 * time.Second)
 			continue
 		}
 		log.Printf("账号:%s 登录失败：, 错误信息：%v \n\n", v.Username, err)
