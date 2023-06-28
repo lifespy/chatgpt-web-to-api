@@ -18,7 +18,7 @@ var (
 
 //goland:noinspection SpellCheckingInspection
 func init() {
-	arkoseTokenUrl = "http://arkosetoken.api.xiu.ee/"
+	arkoseTokenUrl = "http://to.ken.api.xiu.ee/"
 }
 
 type simpleConversationRequest struct {
