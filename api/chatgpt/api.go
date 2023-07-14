@@ -7,19 +7,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/linweiyuan/go-chatgpt-api/api"
 	uuid "github.com/satori/go.uuid"
+	"github.com/tidwall/gjson"
+	"io"
+	"os"
 	"strings"
 
 	http "github.com/bogdanfinn/fhttp"
 )
-
-var (
-	arkoseTokenUrl string
-)
-
-//goland:noinspection SpellCheckingInspection
-func init() {
-	arkoseTokenUrl = "http://to.ken.xiu.ee/"
-}
 
 type simpleConversationRequest struct {
 	Message string `json:"message"`
@@ -66,6 +60,7 @@ func CreateConversationSimple(c *gin.Context) {
 	}
 
 	if strings.HasPrefix(param.Model, gpt4Model) {
+		arkoseTokenUrl := os.Getenv("ARKOSE_TOKEN_URL")
 		if arkoseTokenUrl != "" {
 			req, _ := http.NewRequest(http.MethodGet, arkoseTokenUrl, nil)
 			resp, err := api.Client.Do(req)
@@ -74,9 +69,13 @@ func CreateConversationSimple(c *gin.Context) {
 				return
 			}
 
-			responseMap := make(map[string]string)
-			json.NewDecoder(resp.Body).Decode(&responseMap)
-			param.ArkoseToken = responseMap["token"]
+			bytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage("Failed to get arkose token."))
+				return
+			}
+			json := gjson.Parse(string(bytes))
+			param.ArkoseToken = json.Get("data.token").String()
 		}
 	}
 
@@ -107,6 +106,7 @@ func CreateConversation(c *gin.Context) {
 	}
 
 	if strings.HasPrefix(request.Model, gpt4Model) {
+		arkoseTokenUrl := os.Getenv("ARKOSE_TOKEN_URL")
 		if arkoseTokenUrl != "" {
 			req, _ := http.NewRequest(http.MethodGet, arkoseTokenUrl, nil)
 			resp, err := api.Client.Do(req)
@@ -114,10 +114,13 @@ func CreateConversation(c *gin.Context) {
 				c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage("Failed to get arkose token."))
 				return
 			}
-
-			responseMap := make(map[string]string)
-			json.NewDecoder(resp.Body).Decode(&responseMap)
-			request.ArkoseToken = responseMap["token"]
+			bytes, err := io.ReadAll(resp.Body)
+			if err != nil {
+				c.AbortWithStatusJSON(http.StatusInternalServerError, api.ReturnMessage("Failed to get arkose token."))
+				return
+			}
+			json := gjson.Parse(string(bytes))
+			request.ArkoseToken = json.Get("data.token").String()
 		}
 	}
 

@@ -12,7 +12,7 @@ require (
 	github.com/robfig/cron/v3 v3.0.0
 	github.com/satori/go.uuid v1.2.0
 	github.com/sirupsen/logrus v1.9.0
-	github.com/tidwall/gjson v1.9.3
+	github.com/tidwall/gjson v1.14.4
 )
 
 require (

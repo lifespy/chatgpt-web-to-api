@@ -1,11 +1,12 @@
 package chatgpt
 
 import (
-	"encoding/json"
+	"bufio"
 	"github.com/linweiyuan/go-chatgpt-api/api"
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,14 +20,38 @@ var TokenManager accessToken
 
 func InitToken() {
 	//read accounts.json
-	file, err := os.Open("accounts.json")
+	//file, err := os.Open("accounts.json")
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer file.Close()
+	//decoder := json.NewDecoder(file)
+	//var accountList []api.LoginInfo
+	//err = decoder.Decode(&accountList)
+	file, err := os.Open("accounts.txt")
 	if err != nil {
-		panic(err)
+		log.Fatalf("未找到账号文件: %s", err)
 	}
-	defer file.Close()
-	decoder := json.NewDecoder(file)
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Println(err)
+			panic(err)
+		}
+	}(file)
+
+	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
 	var accountList []api.LoginInfo
-	err = decoder.Decode(&accountList)
+	for scanner.Scan() {
+		line := scanner.Text()
+		arr := strings.Split(line, "----")
+		accountList = append(accountList, api.LoginInfo{
+			Username: arr[0],
+			Password: arr[1],
+		})
+	}
+
 	if err != nil {
 		log.Println(err)
 		panic(err)
@@ -38,7 +63,8 @@ func InitToken() {
 		authResult, err := Login(&v)
 		if err == nil {
 			tokens = append(tokens, *authResult)
-			time.Sleep(10 * time.Second)
+			time.Sleep(30 * time.Second)
+			log.Printf("账号:%s 登录失败：, 错误成功 \n\n", v.Username)
 			continue
 		}
 		log.Printf("账号:%s 登录失败：, 错误信息：%v \n\n", v.Username, err)
