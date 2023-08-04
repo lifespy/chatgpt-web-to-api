@@ -60,11 +60,12 @@ func InitToken() {
 	failCount := 0
 	cc, _ := strconv.Atoi(os.Getenv("LOGIN_FAILED_RETRY_COUNT"))
 	for _, v := range accountList {
+		log.Printf("账号:%s 开始登录 \n\n", v.Username)
 		authResult, err := Login(&v)
 		if err == nil {
 			tokens = append(tokens, *authResult)
+			log.Printf("账号:%s 登录成功 \n\n", v.Username)
 			time.Sleep(30 * time.Second)
-			log.Printf("账号:%s 登录失败：, 错误成功 \n\n", v.Username)
 			continue
 		}
 		log.Printf("账号:%s 登录失败：, 错误信息：%v \n\n", v.Username, err)
