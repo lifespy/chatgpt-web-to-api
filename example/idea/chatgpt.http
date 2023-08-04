@@ -49,13 +49,13 @@ Content-Type: application/json
 Accept: text/event-stream
 
 {
-  "message": "你是谁",
+  "message": "1+1等于几？\n 等于3。\n 错了重新回答",
   "model": "gpt-4"
 }
 
 ### create conversation
-POST https://poe.akm.pw/v1/chat/completions
-Authorization: Bearer ZfT25mYO2UBCm2YxlsnNHw%3D%3D
+POST http://127.0.0.1:8080/chatgpt/backend-api/conversation
+Authorization: test
 Content-Type: application/json
 
 {

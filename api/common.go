@@ -25,6 +25,8 @@ const (
 	PlatformApiPrefix    = "/platform"
 	PlatformApiUrlPrefix = "https://api.openai.com"
 
+	PandoraApiUrl = "https://ai.fakeopen.com/api/conversation"
+
 	defaultErrorMessageKey             = "errorMessage"
 	AuthorizationHeader                = "Authorization"
 	ContentType                        = "application/x-www-form-urlencoded"
